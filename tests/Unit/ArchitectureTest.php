@@ -9,10 +9,16 @@ arch('debugging functions are not used')
     ->expect(['dd', 'dump', 'ray'])
     ->not->toBeUsed();
 
-arch('actions are final and have a handle method')
+// Fortify's generated actions follow Fortify's contracts, not ours
+arch('actions are final')
     ->expect('App\Actions')
     ->toBeFinal()
-    ->toHaveMethod('handle');
+    ->ignoring('App\Actions\Fortify');
+
+arch('actions have a handle method')
+    ->expect('App\Actions')
+    ->toHaveMethod('handle')
+    ->ignoring('App\Actions\Fortify');
 
 arch('enums are enums')
     ->expect('App\Enums')
