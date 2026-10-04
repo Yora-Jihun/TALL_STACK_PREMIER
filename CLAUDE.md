@@ -45,13 +45,20 @@ Laravel 13, Livewire 4, Alpine, Tailwind, Pest 5, Larastan level 7, Pint. MySQL 
 - `belongsTo` guesses the column from the method name (`author()` → `author_id`). Pass the real column when the method is named by role.
 - Relation generic order differs: `BelongsToMany<Target, $this, Pivot>` but `HasManyThrough<Target, Through, $this>`. `$this` goes only in the docblock, never in the arguments.
 - `@return array <string, string>` (with a space) silently breaks the type for PHPStan, and Pint does not catch it.
+- Factories run inside `Model::unguarded()`, so they may set ownership foreign keys. `#[Fillable]` only protects request input.
+- Test a model default with `new Model()` or `$parent->children()->create([...])`, never with a factory: the factory sets the column itself and hides a missing `$attributes`.
+- A "0 bad rows" query or a test without assertions passes on empty data. Count rows first, and add a "noise" row from another workspace to prove isolation.
+- Seeders use `->recycle($team)` so creators, assignees and comment authors are real members of the workspace. `recycle` only replaces `Model::factory()` calls, so plain columns such as `assignee_id` need `->state()`.
+- On this Windows machine `composer` runs through cmd.exe, which deletes `^` from the command line even inside quotes (`composer require "pkg:^1.40"` saves `"1.40"`). Edit the constraint in `composer.json` by hand, then run `composer update vendor/package`.
+- Fortify: only `Features::registration()` is enabled, and the 2FA and passkeys migrations were deleted. Its generated classes in `App\Actions\Fortify` follow Fortify's contracts (`create()`, not final, plus a trait), so the arch test excludes them with `->ignoring('App\Actions\Fortify')`.
+- Pest arch `->ignoring()` only applies to the expectation directly before it. In `->toBeFinal()->toHaveMethod('handle')->ignoring(...)`, `toBeFinal` still checks everything. Write one `arch()` per expectation, each with its own `ignoring()`.
 - The editor's auto-import can pull in random `vendor/` classes (for example `PharIo\Manifest\Author`). Check imports in every review.
 
 ## Roadmap
 
 1. Architecture and conventions (done)
-2. Database design. Part A, schema: done. Part B, enums and models: done. Part C, factories, seeders and relationship tests: next.
-3. Auth and authorization: roles, policies, workspace scoping
+2. Database design (done). Schema, enums, models, factories with states, relationship tests in `tests/Feature/Models`, and a demo seeder (`php artisan migrate:fresh --seed`, login `test@example.com` / `password`).
+3. Auth and authorization: roles, policies, workspace scoping (next). The project started from the blank starter kit, so there is no login yet.
 4. Core CRUD with Livewire
 5. Alpine and Tailwind design system
 6. Queues, events and notifications
