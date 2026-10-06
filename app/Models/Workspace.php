@@ -18,7 +18,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'slug'])]
+#[Fillable(['name'])]
 class Workspace extends Model
 {
     /** @use HasFactory<WorkspaceFactory> */
