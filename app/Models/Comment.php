@@ -26,7 +26,7 @@ class Comment extends Model
     /** @return BelongsTo<Task, $this> */
     public function task(): BelongsTo
     {
-        return $this->belongsTo(Task::class);
+        return $this->belongsTo(Task::class); // task() + _id = task_id, so no column needed
     }
 
     /** @return BelongsTo<User, $this> */
