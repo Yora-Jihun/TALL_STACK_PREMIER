@@ -14,11 +14,14 @@ The owner is learning senior-level Laravel by building **TaskFlow**, a multi-ten
 
 ## Study guide (keep it in this format)
 
-https://claude.ai/artifact/TaAKk2J9nwSVCAGH2ac62E is a **build manual**: one ordered sequence of steps (0.1 … 3.3) from an empty folder to the current state, so the owner can recreate the project alone.
+https://claude.ai/artifact/TaAKk2J9nwSVCAGH2ac62E is a **build manual**: one ordered sequence of steps (0.1 … 3.4) from an empty folder to the current state, so the owner can recreate the project alone.
 
 - Every step has the same parts: **Why**, **Run** (exact commands), **Write** (the exact current file contents, read from the repo, never from memory), **Check** (expected output), **Commit** (message and real hash).
-- Every finished step also has a collapsible **Lesson N** panel with the full explanation (tables, bad vs. good examples). Lessons are numbered globally; L1–L18 exist.
-- Upcoming steps and phases are shown as **🔒 Locked** cards with a title and one line about what they teach (L19 auth tests … L37 deployment). When a step is reached, unlock it and fill it in.
+- Every finished step also has a collapsible **Lesson N** panel with the full explanation (tables, bad vs. good examples). Lessons are numbered globally; L1–L19 exist.
+- Upcoming steps and phases are shown as **🔒 Locked** cards with a title and one line about what they teach (L20 CreateWorkspace … L37 deployment). When a step is reached, unlock it and fill it in.
+- Above Part 0 there's a **"Start here"** section: S1 product, S2 the 8 stories with acceptance criteria, S3 role table (a draft to confirm in Step 3.7), S4 how the layers fit, S5 Relationships lab (interactive labs, guessing rules, pivot lab, casts and `$attributes`, a quiz), S6 System map (request flow + data map, zoom, fullscreen, "Show code" with the real files and "How they connect" cards), and **"What I learned"**: the owner's own questions and answers, dated. Add new Q&A there when the owner asks to "take note".
+- The System map embeds real repo files as JSON in `<script type="application/json" id="sm-code">`. After a step changes those files, re-read them from the repo and replace that JSON, or the code view goes stale.
+- The page uses `<script type="text/plain" data-file="…">` blocks for code; a small script at the bottom turns them into code boxes with Copy buttons.
 - Never delete lesson content when restructuring. Update "Where you are", the left menu and the checklist after each step.
 - Read the artifact before editing it. If it can't be edited from this machine, publish the new step as a separate page and tell the owner.
 
@@ -32,7 +35,7 @@ Laravel 13, Livewire 4, Alpine, Tailwind, Pest 5, Larastan level 7, Pint. MySQL 
 - `composer lint` fixes code style.
 - PHPStan can be slow on the laptop (over 2 minutes on a cold run). Run PHPStan checks in the background. `composer test` currently takes about 2 seconds with warm caches.
 - `tests/Unit/ArchitectureTest.php` checks the `php` and `security` presets, bans `dd`/`dump`/`ray`, requires Actions to be `final` and to have a `handle()` method (two separate rules, both ignoring `App\Actions\Fortify`), and requires everything in `App\Enums` to be an enum.
-- Test suite: 24 tests. Model relationship and default tests live in `tests/Feature/Models/`.
+- Test suite: 32 tests (62 assertions). Model relationship and default tests live in `tests/Feature/Models/`; auth tests (login, wrong password, logout, 429 rate limit, registration, taken email) live in `tests/Feature/Auth/`.
 - Commits are small and focused, using Conventional Commits (`feat:`, `fix:`, `test:`, `chore:`, `refactor:`, `docs:`).
 
 ## Architecture decisions
@@ -67,16 +70,21 @@ Laravel 13, Livewire 4, Alpine, Tailwind, Pest 5, Larastan level 7, Pint. MySQL 
 - Fortify: only `Features::registration()` is enabled, and the 2FA and passkeys migrations were deleted. Its generated classes in `App\Actions\Fortify` follow Fortify's contracts (`create()`, not final, plus a trait), so the arch test excludes them with `->ignoring('App\Actions\Fortify')`.
 - Pest arch `->ignoring()` only applies to the expectation directly before it. In `->toBeFinal()->toHaveMethod('handle')->ignoring(...)`, `toBeFinal` still checks everything. Write one `arch()` per expectation, each with its own `ignoring()`.
 - The editor's auto-import can pull in random `vendor/` classes (for example `PharIo\Manifest\Author`). Check imports in every review.
+- Tests run with `CACHE_STORE=array` and `SESSION_DRIVER=array`, so every test gets a fresh rate limiter and session. A rate-limit test must make all its requests inside one test (a loop), using the same email: the login throttle key is lowercase email + IP.
+- `assertSessionHasErrors('email')` only asks "is there an error on email?", not "is it the only one?". When testing that one thing is rejected, make every other field valid. A duplicate array key (two `'password'` keys) silently keeps the last one.
+- `Password::defaults()` in `AppServiceProvider` is strict only in production (12+ chars, mixed case, symbols, uncompromised). Tests use Laravel's basic minimum of 8, so `'password'` works there but not on the live site.
+- Logout redirects to `/` (Fortify's default via `Fortify::redirects('logout', '/')`). Changing it to the login page is only config: `'redirects' => ['logout' => '/login']` in `config/fortify.php`, test first.
 
 ## Where we stopped (update this at the end of every session)
 
-**2026-10-04, on the laptop.** Step 3.3 (login, register, dashboard, logout and the 429 page) is done and committed as `5d668be feat: add login, register and dashboard screens`. The owner moves to the PC next.
+**2026-10-06, on the PC.** Step 3.4 (auth feature tests, Lesson 19) is done: 8 tests in `tests/Feature/Auth`, 32 in total, committed as `1c59c23 test: add login, logout, rate limit and registration tests` (plus `290b480 docs: explain guessed foreign key in Comment`) and pushed. The study guide marks 3.4 done, and its System map code was refreshed from the repo.
 
-**Next: Step 3.4, auth feature tests (Lesson 19).** Turn the Step 3.3 browser checks into Pest tests: guests are redirected from `/dashboard`; the login and register screens render; registering logs you in; login succeeds with the right password and fails with the wrong one; logout works; the 6th login attempt within a minute gets a 429.
+**Next: Step 3.5, `CreateWorkspace` Action (story 1, Lesson 20).** The owner's first Action class: a final class with `handle()`, a database transaction that creates the workspace and the owner membership together, and a unique slug from the name (`acme`, then `acme-2`). Decide with the owner whether `slug` should stay in `Workspace`'s `#[Fillable]`, since users never type it. Acceptance criteria are in the study guide, S2 story 1.
 
 Open items:
 - `app/Models/Task.php` still has the editor-generated "Summary of attributes" docblock line. Suggest replacing it with a reason.
-- The owner hasn't answered two questions yet: why is `slug` unique but `name` isn't, and why is a bug that crashes only sometimes worse than one that always crashes?
+- `TaskFactory::done()` isn't used anywhere yet (fine; it will be in Phase 4).
+- Optional extra auth tests the owner may add: a logged-in user visiting `/login` is sent to the dashboard (Fortify's `guest` middleware), and a different email from the same IP isn't blocked by the login limiter.
 
 **Setting up on the other machine:**
 ```
@@ -93,7 +101,7 @@ Each machine needs its own `.env` (MySQL database `tall_stack_premier`, created 
 
 1. Architecture and conventions (done)
 2. Database design (done). Schema, enums, models, factories with states, relationship tests in `tests/Feature/Models`, and a demo seeder (`php artisan migrate:fresh --seed`, login `test@example.com` / `password`).
-3. Auth and authorization (in progress): 3.1 Fortify (done), 3.2 login and register (done), 3.3 dashboard, logout and the 429 page (done), 3.4 auth tests (next), 3.5 `CreateWorkspace` Action (story 1), 3.6 workspace scoping with `/w/{slug}` and 404 for non-members, 3.7 policies and the role matrix.
+3. Auth and authorization (in progress): 3.1 Fortify (done), 3.2 login and register (done), 3.3 dashboard, logout and the 429 page (done), 3.4 auth tests (done), 3.5 `CreateWorkspace` Action (story 1, next), 3.6 workspace scoping with `/w/{slug}` and 404 for non-members, 3.7 policies and the role matrix.
 4. Core CRUD with Livewire
 5. Alpine and Tailwind design system
 6. Queues, events and notifications
