@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\WorkspaceRole;
 use Database\Factories\WorkspaceFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -43,5 +44,14 @@ class Workspace extends Model
     public function tasks(): HasManyThrough
     {
         return $this->hasManyThrough(Task::class, Project::class);
+    }
+
+    public function roleOf(User $user): ?WorkspaceRole
+    {
+        return Membership::query()
+            ->where('workspace_id', $this->id)
+            ->where('user_id', $user->id)
+            ->first()
+            ?->role;
     }
 }

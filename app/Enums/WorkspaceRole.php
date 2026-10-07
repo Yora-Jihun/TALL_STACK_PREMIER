@@ -16,4 +16,12 @@ enum WorkspaceRole: string
             self::Member => 'Member',
         };
     }
+
+    public function canManage(): bool
+    {
+        return match ($this) {
+            self::Owner, self::Admin => true,
+            self::Member => false,
+        };
+    }
 }
