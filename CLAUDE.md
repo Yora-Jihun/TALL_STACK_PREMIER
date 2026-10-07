@@ -14,13 +14,13 @@ The owner is learning senior-level Laravel by building **TaskFlow**, a multi-ten
 
 ## Study guide (keep it in this format)
 
-https://claude.ai/artifact/TaAKk2J9nwSVCAGH2ac62E is a **build manual**: one ordered sequence of steps (0.1 … 3.6) from an empty folder to the current state, so the owner can recreate the project alone.
+https://claude.ai/artifact/TaAKk2J9nwSVCAGH2ac62E is a **build manual**: one ordered sequence of steps (0.1 … 3.7) from an empty folder to the current state, so the owner can recreate the project alone.
 
 - Every step has the same parts: **Why**, **Run** (exact commands), **Write** (the exact current file contents, read from the repo, never from memory), **Check** (expected output), **Commit** (message and real hash).
-- Every finished step also has a collapsible **Lesson N** panel with the full explanation (tables, bad vs. good examples). Lessons are numbered globally; L1–L21 exist.
-- Upcoming steps and phases are shown as **🔒 Locked** cards with a title and one line about what they teach (L22 policies … L37 deployment). When a step is reached, unlock it and fill it in.
+- Every finished step also has a collapsible **Lesson N** panel with the full explanation (tables, bad vs. good examples). Lessons are numbered globally; L1–L22 exist.
+- Upcoming steps and phases are shown as **🔒 Locked** cards with a title and one line about what they teach (L23 Livewire components … L37 deployment). When a step is reached, unlock it and fill it in.
 - Above Part 0 there's a **"Start here"** section: S1 product, S2 the 8 stories with acceptance criteria, S3 role table (a draft to confirm in Step 3.7), S4 how the layers fit, S5 Relationships lab (interactive labs, guessing rules, pivot lab, casts and `$attributes`, a quiz), S6 System map (request flow + data map, zoom, fullscreen, "Show code" with the real files and "How they connect" cards), and **"What I learned"**: the owner's own questions and answers, dated. Add new Q&A there when the owner asks to "take note".
-- An **Examination** section ("Senior exam", left menu group "Examination") holds 38 multiple-choice questions on Phases 1–3.6, tagged Junior / Mid / Senior, grouped by topic, each with an explanation and a link to its lesson. Options are shown in a fixed shuffled order; answers are saved per browser. After each finished step, add 3–6 questions about it (mix of levels, including at least one "spot the bug" with code) and update the "Covers Phases …" pill.
+- An **Examination** section ("Senior exam", left menu group "Examination") holds 43 multiple-choice questions on Phases 1–3, tagged Junior / Mid / Senior, grouped by topic, each with an explanation and a link to its lesson. Options are shown in a fixed shuffled order; answers are saved per browser. After each finished step, add 3–6 questions about it (mix of levels, including at least one "spot the bug" with code) and update the "Covers Phases …" pill.
 - The System map embeds real repo files as JSON in `<script type="application/json" id="sm-code">`. After a step changes those files, re-read them from the repo and replace that JSON, or the code view goes stale.
 - The page uses `<script type="text/plain" data-file="…">` blocks for code; a small script at the bottom turns them into code boxes with Copy buttons.
 - Never delete lesson content when restructuring. Update "Where you are", the left menu and the checklist after each step.
@@ -36,7 +36,7 @@ Laravel 13, Livewire 4, Alpine, Tailwind, Pest 5, Larastan level 7, Pint. MySQL 
 - `composer lint` fixes code style.
 - PHPStan can be slow on the laptop (over 2 minutes on a cold run). Run PHPStan checks in the background. `composer test` currently takes about 2 seconds with warm caches.
 - `tests/Unit/ArchitectureTest.php` checks the `php` and `security` presets, bans `dd`/`dump`/`ray`, requires Actions to be `final` and to have a `handle()` method (two separate rules, both ignoring `App\Actions\Fortify`), and requires everything in `App\Enums` to be an enum.
-- Test suite: 41 tests. Workspace page tests in `tests/Feature/Workspaces/`. Earlier count for reference: 37 tests (69 assertions) before Step 3.6. Model relationship and default tests live in `tests/Feature/Models/`; auth tests (login, wrong password, logout, 429 rate limit, registration, taken email) in `tests/Feature/Auth/`; Action tests in `tests/Feature/Actions/`. Tests call Actions with `app(CreateWorkspace::class)->handle(...)`.
+- Test suite: 61 tests (every Pest dataset row counts as one). Workspace page tests in `tests/Feature/Workspaces/`, policy tests with datasets in `tests/Feature/Policies/`. Model relationship and default tests live in `tests/Feature/Models/`; auth tests (login, wrong password, logout, 429 rate limit, registration, taken email) in `tests/Feature/Auth/`; Action tests in `tests/Feature/Actions/`. Tests call Actions with `app(CreateWorkspace::class)->handle(...)`.
 - Commits are small and focused, using Conventional Commits (`feat:`, `fix:`, `test:`, `chore:`, `refactor:`, `docs:`).
 
 ## Architecture decisions
@@ -83,7 +83,9 @@ Laravel 13, Livewire 4, Alpine, Tailwind, Pest 5, Larastan level 7, Pint. MySQL 
 
 **2026-10-07, on the PC.** Step 3.6 is done and pushed (`34d50f6 feat: add workspace page for members with 404 for outsiders`): route `GET /w/{workspace:slug}` → invokable `ShowWorkspaceController` (passes the workspace and its active projects to `resources/views/workspaces/show.blade.php`), protected by `->middleware(['auth', 'member'])`. `app/Http/Middleware/EnsureWorkspaceMember.php` does `abort_unless($user instanceof User && $workspace instanceof Workspace && $user->workspaces()->whereKey($workspace->id)->exists(), 404)`; the alias `'member'` is registered in `bootstrap/app.php`. 4 tests in `tests/Feature/Workspaces/ShowWorkspaceTest.php` (member 200, non-member 404 with a membership elsewhere, guest → login, unknown slug 404). 41 tests in total. The owner passed the Senior exam (32/33, 97%); the exam now has 38 questions including a "Workspace access" topic. (A certificate page was made and then deleted at the owner's request.) The owner still owes an explanation, in their own words, of why outsiders get 404 and not 403.
 
-**Next: Step 3.7, policies and roles (Lesson 22).** Turn the draft role table (study guide S3) into Laravel policies: confirm the matrix with the owner first (who may archive projects, invite, change roles, delete the workspace, see task history). Policies answer "may this member do this?" with 403; membership stays in the middleware (404). Test every cell of the matrix. The "Create workspace" form is planned for Phase 4 (Livewire) and will call `CreateWorkspace`.
+**Later on 2026-10-07: Step 3.7 done, so Phase 3 is complete** (`59d111e feat: add workspace and project policies for the role matrix`). Role matrix confirmed with one change from the draft: members can see task history. `WorkspaceRole::canManage()` (Owner/Admin true, via `match`); `Workspace::roleOf(User $user): ?WorkspaceRole` (Membership query → `->first()?->role`). `WorkspacePolicy`: `invite` (canManage), `changeRoles` and `delete` (Owner only). `ProjectPolicy`: `create(User, Workspace)` called as `can('create', [Project::class, $workspace])`, and `archive(User, Project)` (canManage). Tests use Pest datasets (owner/admin/member/outsider rows) in `tests/Feature/Policies/`: 20 rows. 61 tests in total. Policies for tasks and comments wait for their Phase 4 screens. The owner likes starting every commit with `git status --short`.
+
+**Next: Phase 4, core CRUD with Livewire (Lessons 23–26).** Start with the first Livewire screen. Likely order: the dashboard lists the user's workspaces and links to `/w/{slug}`; a "Create workspace" Livewire form (validation: name required, 3–50 chars) that calls `CreateWorkspace` and redirects to the new workspace; then projects (create/archive with `ProjectPolicy`), then tasks. Load the livewire-enterprise-patterns skill and check the installed Livewire 4 version before writing components.
 
 Open items:
 - `app/Models/Task.php` still has the editor-generated "Summary of attributes" docblock line. Suggest replacing it with a reason.
@@ -105,8 +107,8 @@ Each machine needs its own `.env` (MySQL database `tall_stack_premier`, created 
 
 1. Architecture and conventions (done)
 2. Database design (done). Schema, enums, models, factories with states, relationship tests in `tests/Feature/Models`, and a demo seeder (`php artisan migrate:fresh --seed`, login `test@example.com` / `password`).
-3. Auth and authorization (in progress): 3.1 Fortify (done), 3.2 login and register (done), 3.3 dashboard, logout and the 429 page (done), 3.4 auth tests (done), 3.5 `CreateWorkspace` Action (story 1, done), 3.6 workspace page `/w/{slug}` with 404 for non-members (done), 3.7 policies and the role matrix (next).
-4. Core CRUD with Livewire
+3. Auth and authorization (done): 3.1 Fortify (done), 3.2 login and register (done), 3.3 dashboard, logout and the 429 page (done), 3.4 auth tests (done), 3.5 `CreateWorkspace` Action (story 1, done), 3.6 workspace page `/w/{slug}` with 404 for non-members (done), 3.7 policies and the role matrix (done).
+4. Core CRUD with Livewire (next)
 5. Alpine and Tailwind design system
 6. Queues, events and notifications
 7. Testing and quality
